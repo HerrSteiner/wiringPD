@@ -1,0 +1,51 @@
+#current: l_i386 l_ia64
+current: l_arm
+# ----------------------- Windows -----------------------
+
+pd_nt: $(NAME).dll
+
+.SUFFIXES: .dll
+
+PDNTCFLAGS = /W3 /WX /DNT /DPD /nologo
+VC="C:\Program Files\Microsoft Visual Studio\Vc98"
+
+PDNTINCLUDE = /I. /I..\pd\src /I..\..\pd\src  /I..\..\..\pd\src /I$(VC)\include
+
+PDNTLDIR = $(VC)\lib
+PDNTLIB = $(PDNTLDIR)\libc.lib \
+	$(PDNTLDIR)\oldnames.lib \
+	$(PDNTLDIR)\kernel32.lib \
+	..\..\bin\pd.lib 
+
+.c.dll:
+	cl $(PDNTCFLAGS) $(PDNTINCLUDE) /c $*.c
+	link /dll /export:$(CSYM)_setup $*.obj $(PDNTLIB)
+
+# ----------------------- LINUX i386 and ia64 -----------------------
+
+#l_i386: $(NAME).l_i386
+#l_ia64: $(NAME).l_ia64
+l_arm: $(NAME).l_arm
+
+#.SUFFIXES: .l_i386 .l_ia64 .l_arm
+.SUFFIXES: .l_arm
+
+LINUXCFLAGS = -DPD -O2 -funroll-loops -fomit-frame-pointer \
+    -fno-strict-aliasing -Wall -W -Wshadow -Wstrict-prototypes \
+    -Wno-unused -Wno-parentheses -Wno-switch $(CFLAGS)
+
+UNIXINCLUDE =  -I../pd/src -I../../pd/src -I../../../pd/src \
+    -I../../../../pd/src -I../../../../../pd/src
+LINUXINCLUDE =  $(UNIXINCLUDE)
+
+.c.l_arm:
+	cc $(LINUXCFLAGS) $(LINUXINCLUDE) -o $*.o -c $*.c
+	ld  -shared -o $*.l_arm $*.o -lc -lm -lwiringPi
+	strip --strip-unneeded $*.l_arm
+	rm $*.o
+	mv $*.l_arm $*.pd_linux
+
+# ----------------------------------------------------------
+
+clean:
+	rm -f *.o *.pd_* *.d_ppc *.d_fat *.l_i386 *.l_ia64 *.dll
